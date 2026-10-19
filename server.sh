@@ -1,4 +1,10 @@
 #!/bin/bash
+
+#TO DO:
+# git logs
+# 2 test cases 
+# ip addr and port problem
+#
 echo "v9"
 # ask abt ss -ltn for port, since ss -ltn needs server running to work, but server not opened? chicken egg problem
 # ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
@@ -18,7 +24,7 @@ mkfifo "$output_to_user"
             
             if assign_2_html=$(curl -fsS "https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC")
             then
-                echo $assign_2_html | grep -A 2 "Assignment 2" | html2text
+                echo "$assign_2_html" | html2text | grep -A 2 "Assignment 2" 
                 #curl https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC | grep -A 25 "<b>Assignment 2</b>" | grep "<td>3.*</td>" - incase cant type input
                 touch assignment.json
                 cat > assignment.json <<EOF

@@ -1,9 +1,10 @@
 #!/bin/bash
-ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
-port=$(ss -ltn)
-echo "The server is running at $ip xxxx "
-echo ".................."
-echo "in and out v4"
+echo "v9"
+# ask abt ss -ltn for port, since ss -ltn needs server running to work, but server not opened? chicken egg problem
+# ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
+# port=$(ss -ltn | grep '\*:\*' | awk '{print $4}'| awk -F ':' '{print $2}')
+# echo "The server is running at $ip, port=$port"
+# echo ".................."
 output_to_user=/tmp/reply
 rm -f "$output_to_user"
 mkfifo "$output_to_user"
@@ -17,7 +18,7 @@ mkfifo "$output_to_user"
             
             if assign_2_html=$(curl -fsS "https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC")
             then
-                # echo $assign_2_html | grep -A 2 "Assignment 2" | html2text - this is to see only, can remove
+                echo $assign_2_html | grep -A 2 "Assignment 2" | html2text
                 #curl https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC | grep -A 25 "<b>Assignment 2</b>" | grep "<td>3.*</td>" - incase cant type input
                 touch assignment.json
                 cat > assignment.json <<EOF
@@ -69,12 +70,13 @@ EOF
                 --data-urlencode "f=json" \
                 "https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_POI/MapServer/0/query")
                 status=$?
+                poi_request=$( echo $poi_request | jq -c '[.features[].attributes.poiname // empty]')
                 echo "---------"
                 if [ "$status" -ne 0 ]
                 then
                     echo "Usage : error fetching POI data from coords"
                 else
-                    # currently returns every info abt poi not only name
+                    # returns list of pois in neighborhood
                     echo "$poi_request" > "poi_output.json"
                     cat poi_output.json
                 fi
@@ -88,7 +90,7 @@ EOF
                 status=$?
                 if [[ $(echo "$poi_request" | jq '.features') != "[]" ]]
                 then
-                    # userinput is a valid poi
+                    # userinput is a valid poi so fetch the coords
                     lat=$( echo "$poi_request" | jq '.features[0].geometry.y')
                     long=$(echo "$poi_request" | jq '.features[0].geometry.x')
                     poi_request=$(curl -s -G \
@@ -101,14 +103,13 @@ EOF
                     --data-urlencode "f=json" \
                     "https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_POI/MapServer/0/query")
                     status=$?
-                    # currently returns every info abt poi not only name
-                    # poi_request=$( echo "$poi_request" | jq -r '.features[].attributes.poiname')
+                    # fetches pois and puts into list then into json file
+                    poi_request=$( echo $poi_request | jq -c '[.features[].attributes.poiname // empty]')
                     if [ "$status" -ne 0 ]
                     then
                         echo "Usage : error fetching POI data"
                     else
-
-                        echo "$poi_request" > "poi_output.json"
+                        echo $poi_request > "poi_output.json"
                         cat poi_output.json
                     fi
                 fi
@@ -117,4 +118,7 @@ EOF
     } > "$output_to_user"
 done )&
 
-
+# ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
+# port=$(ss -ltn | grep '\*:\*' | awk '{print $4}'| awk -F ':' '{print $2}')
+# echo "The server is running at $ip, port=$port"
+# echo ".................."

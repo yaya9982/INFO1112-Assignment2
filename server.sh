@@ -4,35 +4,46 @@
 # git logs
 # 2 test cases 
 # ip addr and port problem
-#
-echo "v9"
 # ask abt ss -ltn for port, since ss -ltn needs server running to work, but server not opened? chicken egg problem
-# ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
-# port=$(ss -ltn | grep '\*:\*' | awk '{print $4}'| awk -F ':' '{print $2}')
-# echo "The server is running at $ip, port=$port"
-# echo ".................."
+
 output_to_user=/tmp/reply
 rm -f "$output_to_user"
 mkfifo "$output_to_user"
+start=1
 ( while true
     do 
     nc -l -v 1234 < "$output_to_user" | {
+        if [ $start -ne 0 ]
+        then
+            sleep 1
+            ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}') 
+            port=$(ss -ltn | grep '0.0.0.0:' | awk '{print $4}'| awk -F ':' 'NR==1 {print $2}')
+            echo "The server is running at $ip, port=$port" >&2
+            echo ".................." >&2 
+            start=0
+        fi
         read -r userinput
 
         if [[ "$userinput" == "assignment" ]]
         then 
             
-            if assign_2_html=$(curl -fsS "https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC")
+            if assign_2_output=$(curl -fsS "https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC" | html2text | grep -A 2 "Assignment 2")
             then
-                echo "$assign_2_html" | html2text | grep -A 2 "Assignment 2" 
-                #curl https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC | grep -A 25 "<b>Assignment 2</b>" | grep "<td>3.*</td>" - incase cant type input
+                echo $assign_2_output
                 touch assignment.json
+                title=$( echo "$assign_2_output" | awk 'NR==1' | awk '{print $1 " " $2}')
+                topic=$( echo "$assign_2_output" | awk 'NR==3' | awk '{print $1}')
+                date_pt_1=$( echo "$assign_2_output" | awk 'NR==1' | awk '{print $5}')
+                date_pt_2=$( echo "$assign_2_output" | awk 'NR==2' | awk '{print $7 " " $8 " " $10}')
+                date_pt_3=$( echo "$assign_2_output" | awk 'NR==3' | awk '{print $2}')
+                due_date="$date_pt_1 $date_pt_2$date_pt_3"
+                points=$( echo "$assign_2_output" | awk 'NR==2' | awk '{print $6}' | grep -o '[0-9]*')
                 cat > assignment.json <<EOF
                 {
-                    "title" : "Assignment 2",
-                    "topic" : "Networking",
-                    "due_date" : "01 Nov 2026 23:59",
-                    "points" : 15
+                    "title" : "$title",
+                    "topic" : "$topic",
+                    "due_date" : "$due_date",
+                    "points" : "$points"
                 }
 EOF
                 cat assignment.json
@@ -122,6 +133,11 @@ EOF
             fi
         fi
     } > "$output_to_user"
+    server_status=${PIPESTATUS[0]}
+    if [ "$server_status" -ne 0 ]
+    then
+        echo "usage : server not running"
+    fi
 done )&
 
 # ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')

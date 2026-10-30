@@ -1,31 +1,12 @@
 #!/usr/bin/env bash
-
-#TO DO:
-# git logs and put on github
-# remove hidden characters (use printf to spot)
-# not 'nc -l' use 'nc -lk' (reject dup req)
-
-# make client.sh to test all cases 
-
-# test cases
-# 1. echo assignment | nc localhost 1234 (when the server is not running)
-# echo $? (returns 1 for failure since 0 is success)
-# do this inside a docker shell script
-
-# use ping to check for diff cases - ss for evidence
-# if port not listening
-# if docker contianer not running
-# if port blocking
-
-# AI acknowledge for python file and understand what it does
-
-# test case 2. ss asw
-
-
+# TO DO
+# remove hidden char
+# final rubric rundown
+# python file understand and AI acknowledge
 curr_pid=""
 
 input_handler() {
-    userinput=$1
+    userinput=$(printf '%s' "$1" | tr -d '\r')
     if [[ "$userinput" == "assignment" ]]
     then 
         if assign_2_output=$(curl -fsS "https://www.sydney.edu.au/units/INFO1112/2026-S2C-ND-CC" | html2text | grep -A 2 "Assignment 2")

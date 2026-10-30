@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# TO DO
-# remove hidden char
-# final rubric rundown
-# python file understand and AI acknowledge
-curr_pid=""
 
+curr_pid=""
 input_handler() {
     userinput=$(printf '%s' "$1" | tr -d '\r')
     if [[ "$userinput" == "assignment" ]]
@@ -59,8 +55,10 @@ EOF
         then
             # if input are coords
             coords=$(echo "$userinput" | tr -d ' \r')
+            lat=$(echo "$coords" | awk -F ',' '{printf $1}')
+            long=$(echo "$coords" | awk -F ',' '{printf $2}')
             poi_request=$(curl -s -G \
-            --data-urlencode "geometry=$coords" \
+            --data-urlencode "geometry=$long,$lat" \
             --data-urlencode "geometryType=esriGeometryPoint" \
             --data-urlencode "inSR=4326" \
             --data-urlencode "distance=1000" \
@@ -70,7 +68,6 @@ EOF
             "https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_POI/MapServer/0/query")
             status=$?
             poi_request=$( echo $poi_request | jq -c '[.features[].attributes.poiname // empty]')
-            echo "---------"
             if [ "$status" -ne 0 ]
             then
                 echo "Usage : error fetching POI data from coords"
